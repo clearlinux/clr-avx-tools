@@ -1,0 +1,2 @@
+#!/bin/sh
+python /usr/bin/avxjudge.py -q -2 $1
