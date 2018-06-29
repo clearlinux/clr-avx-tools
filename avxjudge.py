@@ -94,40 +94,12 @@ def is_avx2(instruction:str, args:str) -> float:
 
     return val
 
-def has_high_register(args: str) -> int:
-    if "mm16" in args:
-        return 1
-    if "mm17" in args:
-        return 1
-    if "mm18" in args:
-        return 1
-    if "mm19" in args:
-        return 1
-    if "mm20" in args:
-        return 1
-    if "mm21" in args:
-        return 1
-    if "mm22" in args:
-        return 1
-    if "mm23" in args:
-        return 1
-    if "mm24" in args:
-        return 1
-    if "mm25" in args:
-        return 1
-    if "mm26" in args:
-        return 1
-    if "mm27" in args:
-        return 1
-    if "mm28" in args:
-        return 1
-    if "mm29" in args:
-        return 1
-    if "mm30" in args:
-        return 1
-    if "mm31" in args:
-        return 1
-    return 0
+def has_high_register(args: str) -> bool:
+    return args.endswith((
+        'mm16', 'mm17', 'mm18', 'mm19', 'mm20', 'mm21', 'mm22',
+        'mm23', 'mm24', 'mm25', 'mm26', 'mm27', 'mm28', 'mm29',
+        'mm30', 'mm31'
+    ))
 
 def is_avx512(instruction:str, args:str) -> float:
     val: float = -1.0
