@@ -6,23 +6,49 @@ import argparse
 import os
 
 # MMX and SSE2 instructions
-sse_instructions_xmm = list()
+sse_instructions_xmm = set([
+    "paddb", "paddd", "paddsb", "paddsw", "paddusb", "psubw",
+    "paddusw", "paddw", "pmaddwd", "pmulhw", "pmullw", "psubb", "psubsb",
+    "psubsw", "psubusb", "paddusw", "paddw", "pmaddwd", "pmulhw", "pmullw",
+    "psubb", "psubd", "psubd", "psubsb", "psubsw", "psubusb", "psubusw"
+])
 
 # 0.1 value instructions
-avx2_instructions_lv = list()
-avx2_instructions_ymm = list()
-avx512_instructions_lv = list()
+avx2_instructions_lv = set(["shrx", "rorx", "shlx", "shrx", "shrx", "movbe"])
+avx2_instructions_ymm = set([
+    "vpaddq", "vpaddd", "vpsubq", "vpsubd", "vmulpd", "vaddpd", "vsubpd",
+    "vmulps", "vaddps", "vsubps", "vpmaxsq", "vpminsq", "vpmuludq",
+    "vpand", "vpmaxud", "vpminud", "vpmaxsd", "vpmaxsw", "vpminsd",
+    "vpminsw", "vpand", "vpor", "vpmulld"
+])
+avx512_instructions_lv = set([
+    "vfmadd132ss", "vfmadd213ss", "vfmadd231ss", "vfmadd132sd",
+    "vfmadd231sd", "vfmadd213sd"
+])
 
 
 # 1.0 value instructions
-avx2_instructions = list()
-avx512_instructions = list()
+avx2_instructions = set([
+    "vfmsub132ss", "vfmsub213ss", "vfmsub231ss", "vfmsub132sd", "vfmsub231sd",
+    "vfmsub213sd",
+    "vfnmadd132ss", "vfnmadd213ss", "vfnmadd231ss", "vfnmadd132sd",
+    "vfnmadd231sd", "vfnmadd213sd",
+    "vfnmsub132ss", "vfnmsub213ss", "vfnmsub231ss", "vfnmsub132sd",
+    "vfnmsub231sd", "vfnmsub213sd",
+])
+avx512_instructions = set()
 
 # 2.0 value instructions
-avx2_instructions_hv = list()
-avx512_instructions_hv = list()
-
-
+avx2_instructions_hv = set([
+    "vpclmulhqlqdq", "vpclmullqhqdq",
+    "vfmadd132ps", "vfmadd213ps", "vfmadd231ps", "vfmadd132pd", "vfmadd231pd",
+    "vfmadd213pd", "vfmsub132ps", "vfmsub213ps", "vfmsub231ps", "vfmsub132pd",
+    "vfmsub231pd", "vfmsub213pd",
+    "vfnmadd132ps", "vfnmadd213ps", "vfnmadd231ps", "vfnmadd132pd",
+    "vfnmadd231pd", "vfnmadd213pd", "vfnmsub132ps", "vfnmsub213ps",
+    "vfnmsub231ps", "vfnmsub132pd", "vfnmsub231pd", "vfnmsub213pd", "vdivpd",
+])
+avx512_instructions_hv = set()
 
 
 sse_functions = dict()
@@ -38,132 +64,6 @@ quiet: int = 0
 
 
 
-
-def init_ins() -> None:
-
-
-    sse_instructions_xmm.append("paddb")
-    sse_instructions_xmm.append("paddd")
-    sse_instructions_xmm.append("paddsb")
-    sse_instructions_xmm.append("paddsw")
-    sse_instructions_xmm.append("paddusb")
-    sse_instructions_xmm.append("paddusw")
-    sse_instructions_xmm.append("paddw")
-    sse_instructions_xmm.append("pmaddwd")
-    sse_instructions_xmm.append("pmulhw")
-    sse_instructions_xmm.append("pmullw")
-    sse_instructions_xmm.append("psubb")
-    sse_instructions_xmm.append("psubsb")
-    sse_instructions_xmm.append("psubsw")
-    sse_instructions_xmm.append("psubusb")
-    sse_instructions_xmm.append("paddusw")
-    sse_instructions_xmm.append("paddw")
-    sse_instructions_xmm.append("pmaddwd")
-    sse_instructions_xmm.append("pmulhw")
-    sse_instructions_xmm.append("pmullw")
-    sse_instructions_xmm.append("psubb")
-    sse_instructions_xmm.append("psubd")
-    sse_instructions_xmm.append("psubd")
-    sse_instructions_xmm.append("psubsb")
-    sse_instructions_xmm.append("psubsw")
-    sse_instructions_xmm.append("psubusb")
-    sse_instructions_xmm.append("psubusw")
-    sse_instructions_xmm.append("psubw")
-
-
-    avx2_instructions_lv.append("shrx")
-    avx2_instructions_lv.append("rorx")
-    avx2_instructions_lv.append("shlx")
-    avx2_instructions_lv.append("shrx")
-    avx2_instructions_lv.append("shrx")
-    avx2_instructions_lv.append("movbe")
-
-
-    avx2_instructions_ymm.append("vpaddq")
-    avx2_instructions_ymm.append("vpaddd")
-    avx2_instructions_ymm.append("vpsubq")
-    avx2_instructions_ymm.append("vpsubd")
-    avx2_instructions_ymm.append("vmulpd")
-    avx2_instructions_ymm.append("vaddpd")
-    avx2_instructions_ymm.append("vsubpd")
-    avx2_instructions_ymm.append("vmulps")
-    avx2_instructions_ymm.append("vaddps")
-    avx2_instructions_ymm.append("vsubps")
-    avx2_instructions_ymm.append("vpmaxsq")
-    avx2_instructions_ymm.append("vpminsq")
-    avx2_instructions_ymm.append("vpmuludq")
-    avx2_instructions_ymm.append("vpand")
-    avx2_instructions_ymm.append("vpmaxud")
-    avx2_instructions_ymm.append("vpminud")
-    avx2_instructions_ymm.append("vpmaxsd")
-    avx2_instructions_ymm.append("vpmaxsw")
-    avx2_instructions_ymm.append("vpminsd")
-    avx2_instructions_ymm.append("vpminsw")
-    avx2_instructions_ymm.append("vpand")
-    avx2_instructions_ymm.append("vpor")
-    avx2_instructions_ymm.append("vpmulld")
-
-
-    avx2_instructions.append("vfmadd132ss")
-    avx2_instructions.append("vfmadd213ss")
-    avx2_instructions.append("vfmadd231ss")
-    avx2_instructions.append("vfmadd132sd")
-    avx2_instructions.append("vfmadd231sd")
-    avx2_instructions.append("vfmadd213sd")
-
-    avx2_instructions.append("vfmsub132ss")
-    avx2_instructions.append("vfmsub213ss")
-    avx2_instructions.append("vfmsub231ss")
-    avx2_instructions.append("vfmsub132sd")
-    avx2_instructions.append("vfmsub231sd")
-    avx2_instructions.append("vfmsub213sd")
-
-    avx2_instructions.append("vfnmadd132ss")
-    avx2_instructions.append("vfnmadd213ss")
-    avx2_instructions.append("vfnmadd231ss")
-    avx2_instructions.append("vfnmadd132sd")
-    avx2_instructions.append("vfnmadd231sd")
-    avx2_instructions.append("vfnmadd213sd")
-
-    avx2_instructions.append("vfnmsub132ss")
-    avx2_instructions.append("vfnmsub213ss")
-    avx2_instructions.append("vfnmsub231ss")
-    avx2_instructions.append("vfnmsub132sd")
-    avx2_instructions.append("vfnmsub231sd")
-    avx2_instructions.append("vfnmsub213sd")
-
-    avx2_instructions_hv.append("vpclmulhqlqdq")
-    avx2_instructions_hv.append("vpclmullqhqdq")
-
-    avx2_instructions_hv.append("vfmadd132ps")
-    avx2_instructions_hv.append("vfmadd213ps")
-    avx2_instructions_hv.append("vfmadd231ps")
-    avx2_instructions_hv.append("vfmadd132pd")
-    avx2_instructions_hv.append("vfmadd231pd")
-    avx2_instructions_hv.append("vfmadd213pd")
-    avx2_instructions_hv.append("vfmsub132ps")
-    avx2_instructions_hv.append("vfmsub213ps")
-    avx2_instructions_hv.append("vfmsub231ps")
-    avx2_instructions_hv.append("vfmsub132pd")
-    avx2_instructions_hv.append("vfmsub231pd")
-    avx2_instructions_hv.append("vfmsub213pd")
-
-    avx2_instructions_hv.append("vfnmadd132ps")
-    avx2_instructions_hv.append("vfnmadd213ps")
-    avx2_instructions_hv.append("vfnmadd231ps")
-    avx2_instructions_hv.append("vfnmadd132pd")
-    avx2_instructions_hv.append("vfnmadd231pd")
-    avx2_instructions_hv.append("vfnmadd213pd")
-    avx2_instructions_hv.append("vfnmsub132ps")
-    avx2_instructions_hv.append("vfnmsub213ps")
-    avx2_instructions_hv.append("vfnmsub231ps")
-    avx2_instructions_hv.append("vfnmsub132pd")
-    avx2_instructions_hv.append("vfnmsub231pd")
-    avx2_instructions_hv.append("vfnmsub213pd")
-    avx2_instructions_hv.append("vdivpd")
-
-
-    return
 
 def is_sse(instruction:str, args:str) -> float:
 
@@ -194,40 +94,12 @@ def is_avx2(instruction:str, args:str) -> float:
 
     return val
 
-def has_high_register(args: str) -> int:
-    if "mm16" in args:
-        return 1
-    if "mm17" in args:
-        return 1
-    if "mm18" in args:
-        return 1
-    if "mm19" in args:
-        return 1
-    if "mm20" in args:
-        return 1
-    if "mm21" in args:
-        return 1
-    if "mm22" in args:
-        return 1
-    if "mm23" in args:
-        return 1
-    if "mm24" in args:
-        return 1
-    if "mm25" in args:
-        return 1
-    if "mm26" in args:
-        return 1
-    if "mm27" in args:
-        return 1
-    if "mm28" in args:
-        return 1
-    if "mm29" in args:
-        return 1
-    if "mm30" in args:
-        return 1
-    if "mm31" in args:
-        return 1
-    return 0
+def has_high_register(args: str) -> bool:
+    return args.endswith((
+        'mm16', 'mm17', 'mm18', 'mm19', 'mm20', 'mm21', 'mm22',
+        'mm23', 'mm24', 'mm25', 'mm26', 'mm27', 'mm28', 'mm29',
+        'mm30', 'mm31'
+    ))
 
 def is_avx512(instruction:str, args:str) -> float:
     val: float = -1.0
@@ -345,8 +217,6 @@ def do_file(filename: str) -> None:
     global total_sse_score
     global total_avx2_score
     global total_avx512_score
-
-    init_ins()
 
     if quiet == 0:
         print("Analyzing", filename)
