@@ -127,83 +127,37 @@ def is_avx512(instruction:str, args:str) -> float:
 
     return val
 
-def ratio(f: float) -> str:
-    f = f * 100
-    f = round(f)/100.0
-    return str(f)
-
-
 
 def print_top_functions() -> None:
+    def ratio(f: float) -> str:
+        f = f * 100
+        f = round(f)/100.0
+        return str(f)
 
-    print("Top SSE functions by instruction count")
-    count = 0
-    for f in sorted(sse_functions_ratio, key=sse_functions_ratio.get, reverse=True):
-        if count < 5:
-            sf = f
-            while len(sf) < 30:
-                sf = sf + " "
-            print("    ",sf, "\t", ratio(sse_functions_ratio[f]),"%")
-            count += 1
 
-    print()
-    print("Top SSE functions by value")
-    count = 0
-    for f in sorted(sse_functions, key=sse_functions.get, reverse=True):
-        if count < 5:
-            sf = f
-            while len(sf) < 30:
-                sf = sf + " "
-            print("    ",sf, "\t", ratio(sse_functions[f]))
-            count += 1
+    def summarize(table: dict, is_pct: bool, max_funcs: int = 5) -> None:
+        for f in sorted(table, key=table.get, reverse=True)[:max_funcs]:
+            f = "    %-30s\t%s" % (f, ratio(table[f]))
 
-    print()
+            if is_pct:
+                print(f, "%s")
+            else:
+                print(f)
 
-    print("Top AVX2 functions by instruction count")
-    count = 0
-    for f in sorted(avx2_functions_ratio, key=avx2_functions_ratio.get, reverse=True):
-        if count < 5:
-            sf = f
-            while len(sf) < 30:
-                sf = sf + " "
-            print("    ",sf, "\t", ratio(avx2_functions_ratio[f]),"%")
-            count += 1
+    sets = (
+        ("SSE", sse_functions, sse_functions_ratio),
+        ("AVX2", avx2_functions, avx2_functions_ratio),
+        ("AVX512", avx512_functions, avx512_functions_ratio),
+    )
 
-    print()
-    print("Top AVX2 functions by value")
-    count = 0
-    for f in sorted(avx2_functions, key=avx2_functions.get, reverse=True):
-        if count < 5:
-            sf = f
-            while len(sf) < 30:
-                sf = sf + " "
-            print("    ",sf, "\t", ratio(avx2_functions[f]))
-            count += 1
+    for set_name, funcs, funcs_ratio in sets:
+        print("Top %s functions by instruction count" % set_name)
+        summarize(funcs_ratio, True)
+        print()
 
-    print()
-
-    print("Top AVX512 functions by instruction count")
-    count = 0
-    for f in sorted(avx512_functions_ratio, key=avx512_functions_ratio.get, reverse=True):
-        if count < 5:
-            sf = f
-            while len(sf) < 30:
-                sf = sf + " "
-            print("    ",sf, "\t", ratio(avx512_functions_ratio[f]),"%")
-            count += 1
-
-    print()
-    print("Top AVX512 functions by value")
-    count = 0
-    for f in sorted(avx512_functions, key=avx512_functions.get, reverse=True):
-        if count < 5:
-            sf = f
-            while len(sf) < 30:
-                sf = sf + " "
-            print("    ",sf, "\t", ratio(avx512_functions[f]))
-            count += 1
-
-    return
+        print("Top %s functions by value" % set_name)
+        summarize(funcs, False)
+        print()
 
 
 def do_file(filename: str) -> None:
