@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 use strict;
+use File::Path qw(make_path);
+
 if (scalar @ARGV < 3) {
     print "clr-avx2-move.pl <libsubdir> <pluginsuffix> <buildroot>\n";
     print "Examples:\n";
@@ -89,7 +91,7 @@ for my $f (@files) {
         $f =~ m,^(.*?)/?([^/]+)$,;
         my $dirname = "$1/$libsubdir";
         $to = "$dirname/$2";
-        mkdir($dirname) unless defined($createddirs{$dirname});
+        make_path($dirname) unless defined($createddirs{$dirname});
         $createddirs{$dirname} = 1;
     } else {
         # No SONAME or interpreter, it must be a plugin.
