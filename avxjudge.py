@@ -21,14 +21,12 @@ avx2_instructions_ymm = set([
     "vpand", "vpmaxud", "vpminud", "vpmaxsd", "vpmaxsw", "vpminsd",
     "vpminsw", "vpand", "vpor", "vpmulld"
 ])
-avx512_instructions_lv = set([
-    "vfmadd132ss", "vfmadd213ss", "vfmadd231ss", "vfmadd132sd",
-    "vfmadd231sd", "vfmadd213sd"
-])
-
+avx512_instructions_lv = set()
 
 # 1.0 value instructions
 avx2_instructions = set([
+    "vfmadd132ss", "vfmadd213ss", "vfmadd231ss", "vfmadd132sd",
+    "vfmadd231sd", "vfmadd213sd",
     "vfmsub132ss", "vfmsub213ss", "vfmsub231ss", "vfmsub132sd", "vfmsub231sd",
     "vfmsub213sd",
     "vfnmadd132ss", "vfnmadd213ss", "vfnmadd231ss", "vfnmadd132sd",
