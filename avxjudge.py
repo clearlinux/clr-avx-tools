@@ -126,13 +126,12 @@ def is_avx512(instruction:str, args:str) -> float:
     return val
 
 
+def ratio(f: float) -> str:
+    f = f * 100
+    f = round(f)/100.0
+    return str(f)
+
 def print_top_functions() -> None:
-    def ratio(f: float) -> str:
-        f = f * 100
-        f = round(f)/100.0
-        return str(f)
-
-
     def summarize(table: dict, is_pct: bool, max_funcs: int = 5) -> None:
         for f in sorted(table, key=table.get, reverse=True)[:max_funcs]:
             f = "    %-30s\t%s" % (f, ratio(table[f]))
