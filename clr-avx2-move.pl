@@ -16,10 +16,9 @@ my $root = shift @ARGV;
 my @files;
 my %createddirs;
 
-sub scandir($$$) {
+sub scandir($$) {
     my $dir = $_[0];
-    my $needs_exec = $_[1];
-    my $name_match = $_[2];
+    my $lambda = $_[1];
 
     # Only recurse into this dir if it exists and is not a symlink
     return unless (-d $dir && ! -l $dir);
@@ -28,33 +27,48 @@ sub scandir($$$) {
     while (readdir $dh) {
         next if $_ eq "." || $_ eq "..";
 
-        my $f = "$dir/$_";
-        if (-f $f) {
-            next unless (-x $f || !$needs_exec);
-            next unless m/$name_match/;
-
-            # Put symlinks at the beginning of the list
-            # (to avoid breaking them when we move the actual file)
-            if (-l $f) {
-                unshift @files, $f;
-            } else {
-                push @files, $f;
-            }
-        } elsif (-d $f) {
-            scandir($f);
-        }
+        $lambda->("$dir/$_");
     }
     closedir $dh;
 }
 
+sub add_file($) {
+    # Put symlinks at the beginning of the list
+    # (to avoid breaking them when we move the actual file)
+    my $f = $_[0];
+    if (-l $f) {
+        unshift @files, $f;
+    } else {
+        push @files, $f;
+    }
+}
+
 # Build the file listing
-scandir("$root/bin", 1, qr//);
-scandir("$root/sbin", 1, qr//);
-scandir("$root/usr/bin", 1, qr//);
-scandir("$root/usr/sbin", 1, qr//);
-scandir("$root/usr/local/bin", 1, qr//);
-scandir("$root/usr/local/sbin", 1, qr//);
-scandir("$root/usr/lib64", 0, qr/\.so\.?/);
+
+my $binlambda = sub {
+    # executables must be regular files and +x
+    my $f = $_[0];
+    add_file($f) if (-f $f && -x $f);
+};
+scandir("$root/bin", $binlambda);
+scandir("$root/sbin", $binlambda);
+scandir("$root/usr/bin", $binlambda);
+scandir("$root/usr/sbin", $binlambda);
+scandir("$root/usr/local/bin", $binlambda);
+scandir("$root/usr/local/sbin", $binlambda);
+
+my $liblambda;
+$liblambda = sub {
+    $_ = $_[0];
+    if (-f $_) {
+        # It's a library if it's named *.so, *.so.* (except *.so.avx*)
+        add_file($_) if /\.so($|\.(?!avx))/;
+    } elsif (-d $_) {
+        # Lib dirs are recursive
+        scandir($_, $liblambda) unless m,/$libsubdir$,;
+    }
+};
+scandir("$root/usr/lib64", $liblambda);
 
 # Save STDERR for us, but redirect it to /dev/null for readelf
 open(REAL_STDERR, ">&STDERR");
