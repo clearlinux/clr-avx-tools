@@ -91,7 +91,10 @@ for my $f (@files) {
         $f =~ m,^(.*?)/?([^/]+)$,;
         my $dirname = "$1/$libsubdir";
         $to = "$dirname/$2";
-        make_path($dirname) unless defined($createddirs{$dirname});
+
+        my $ignored_error;
+        make_path($dirname, { error => \$ignored_error })
+            unless defined($createddirs{$dirname});
         $createddirs{$dirname} = 1;
     } else {
         # No SONAME or interpreter, it must be a plugin.
