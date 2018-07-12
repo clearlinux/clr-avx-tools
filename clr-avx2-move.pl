@@ -13,7 +13,7 @@ if (scalar @ARGV < 3) {
 my $libsubdir = shift @ARGV;
 my $pluginsuffix = shift @ARGV;
 my $root = shift @ARGV;
-my @files;
+my %moves;
 my %createddirs;
 
 sub scandir($$) {
@@ -33,18 +33,51 @@ sub scandir($$) {
 }
 
 sub add_file($) {
-    # Put symlinks at the beginning of the list
-    # (to avoid breaking them when we move the actual file)
     my $f = $_[0];
-    if (-l $f) {
-        unshift @files, $f;
-    } else {
-        push @files, $f;
+    my $soname = 0;
+    my $interpreter = 0;
+    my $elftype;
+
+    # Run readelf -hdl on the file to get the SONAME and INTERP
+    open READELF, "-|", "readelf", "-hdl", $f;
+    while (<READELF>) {
+        $elftype = $1 if /^\s*Type:\s*(\w+)\b/;
+        $soname = 1 if / *0x\w+ \(SONAME\)\s/;
+        $interpreter = 1 if /^\s*INTERP\s/;
     }
+    close READELF;
+
+    return if $? >> 8;  # not ELF, ignore (could be a script)
+    return unless $elftype eq "EXEC" || $elftype eq "DYN";
+
+    my $to;
+    if ($soname || $interpreter) {
+        # This ELF file either has a SONAME (it's a library), an interpreter
+        # (it's an executable), or both (it's an executable library).
+        # Move it to the $libsubdir subdir.
+        $f =~ m,^(.*?)/?([^/]+)$,;
+        my $dirname = "$1/$libsubdir";
+        $to = "$dirname/$2";
+
+        my $ignored_error;
+        make_path($dirname, { error => \$ignored_error })
+            unless defined($createddirs{$dirname});
+        $createddirs{$dirname} = 1;
+    } else {
+        # No SONAME or interpreter, it must be a plugin.
+        $to = $f . $pluginsuffix;
+    }
+    $moves{$f} = $to;
 }
 
-# Build the file listing
+# Save STDERR for us, but redirect it to /dev/null for readelf
+open(REAL_STDERR, ">&STDERR");
+open(STDERR, ">/dev/null");
 
+# Make sure readelf outputs in English
+$ENV{LC_ALL} = 'C';
+
+# Build the file listing
 my $binlambda = sub {
     # executables must be regular files and +x
     my $f = $_[0];
@@ -70,50 +103,10 @@ $liblambda = sub {
 };
 scandir("$root/usr/lib64", $liblambda);
 
-# Save STDERR for us, but redirect it to /dev/null for readelf
-open(REAL_STDERR, ">&STDERR");
-open(STDERR, ">/dev/null");
-
 # Automatically flush STDOUT
 $| = 1;
 
-# Make sure readelf outputs in English
-$ENV{LC_ALL} = 'C';
-
-for my $f (@files) {
-    my $soname = 0;
-    my $interpreter = 0;
-    my $elftype;
-
-    # Run readelf -hdl on the file to get the SONAME and INTERP
-    open READELF, "-|", "readelf", "-hdl", $f;
-    while (<READELF>) {
-        $elftype = $1 if /^\s*Type:\s*(\w+)\b/;
-        $soname = 1 if / *0x\w+ \(SONAME\)\s/;
-        $interpreter = 1 if /^\s*INTERP\s/;
-    }
-    close READELF;
-
-    next if $? >> 8;  # not ELF, ignore (could be a script)
-    next unless $elftype eq "EXEC" || $elftype eq "DYN";
-
-    my $to;
-    if ($soname || $interpreter) {
-        # This ELF file either has a SONAME (it's a library), an interpreter
-        # (it's an executable), or both (it's an executable library).
-        # Move it to the $libsubdir subdir.
-        $f =~ m,^(.*?)/?([^/]+)$,;
-        my $dirname = "$1/$libsubdir";
-        $to = "$dirname/$2";
-
-        my $ignored_error;
-        make_path($dirname, { error => \$ignored_error })
-            unless defined($createddirs{$dirname});
-        $createddirs{$dirname} = 1;
-    } else {
-        # No SONAME or interpreter, it must be a plugin.
-        $to = $f . $pluginsuffix;
-    }
+while (my ($f, $to) = each %moves) {
     rename($f, $to) and print "$f -> $to\n"
         or print REAL_STDERR "rename(\"$f\", \"$to\"): $!\n";
 }
