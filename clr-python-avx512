@@ -1,2 +1,3 @@
 #!/bin/sh
-python /usr/bin/avxjudge.py -q -5 $1
+exec make -kf /usr/share/clr-avx-tools/avxjudge.make ARGS="-q -5" "$@"
+
