@@ -49,18 +49,28 @@ avx2_instructions_hv = set([
 avx512_instructions_hv = set()
 
 
-sse_functions = dict()
-avx2_functions = dict()
-avx512_functions = dict()
-sse_functions_ratio = dict()
-avx2_functions_ratio = dict()
-avx512_functions_ratio = dict()
+class FunctionRecord():
+    def __init__(self):
+        self.scores = {"sse": 0.0, "avx2": 0.0, "avx512": 0.0}
+        self.counts = {"sse": 0, "avx2": 0, "avx512": 0}
+        self.instructions = 0
+        self.name = ""
 
 
-verbose: int = 0
-quiet: int = 0
-
-
+class RecordKeeper():
+    def __init__(self):
+        self.total_counts = {"sse": 0, "avx2": 0, "avx512": 0}
+        self.total_scores = {"sse": 0.0, "avx2": 0.0, "avx512": 0.0}
+        self.functions = {"sse": dict(), "avx2": dict(), "avx512": dict()}
+        self.ratios = {"sse": dict(), "avx2": dict(), "avx512": dict()}
+        self.function_record = FunctionRecord()
+    def finalize_function_attrs(self):
+        for i in ("sse", "avx2", "avx512"):
+            if self.function_record.counts[i] >= 1:
+                self.functions[i][self.function_record.name] = self.function_record.scores[i]
+                self.ratios[i][self.function_record.name] = 100.0 * self.function_record.counts[i] / self.function_record.instructions
+            self.total_scores[i] += self.function_record.scores[i]
+            self.total_counts[i] += self.function_record.counts[i]
 
 
 def is_sse(instruction:str, args:str) -> float:
@@ -131,7 +141,7 @@ def ratio(f: float) -> str:
     f = round(f)/100.0
     return str(f)
 
-def print_top_functions() -> None:
+def print_top_functions(records:RecordKeeper) -> None:
     def summarize(table: dict, is_pct: bool, max_funcs: int = 5) -> None:
         for f in sorted(table, key=table.get, reverse=True)[:max_funcs]:
             f = "    %-30s\t%s" % (f, ratio(table[f]))
@@ -142,9 +152,9 @@ def print_top_functions() -> None:
                 print(f)
 
     sets = (
-        ("SSE", sse_functions, sse_functions_ratio),
-        ("AVX2", avx2_functions, avx2_functions_ratio),
-        ("AVX512", avx512_functions, avx512_functions_ratio),
+        ("SSE", records.functions["sse"], records.ratios["sse"]),
+        ("AVX2", records.functions["avx2"], records.ratios["avx2"]),
+        ("AVX512", records.functions["avx512"], records.ratios["avx512"]),
     )
 
     for set_name, funcs, funcs_ratio in sets:
@@ -157,144 +167,87 @@ def print_top_functions() -> None:
         print()
 
 
-def do_file(filename: str) -> None:
-    global verbose
-    global quiet
+def process_objdump_line(records:RecordKeeper, line:str, verbose:int):
+    sse_score = -1.0
+    avx2_score = -1.0
+    avx512_score = -1.0
+    sse_str = " "
+    avx2_str = " "
+    avx512_str = ""
 
-    global total_sse_count
-    global total_avx2_count
-    global total_avx512_count
+    match = re.search("^(.*)\#.*", line)
+    if match:
+        line = match.group(1)
 
-    global total_sse_score
-    global total_avx2_score
-    global total_avx512_score
+    match = re.search(".*[0-9a-f]+\:\t[0-9a-f\ ]+\t([a-zA-Z0-9]+) (.*)", line)
+    if match:
+        ins = match.group(1)
+        arg = match.group(2)
+
+        sse_score = is_sse(ins, arg)
+        avx2_score = is_avx2(ins, arg)
+        avx512_score = is_avx512(ins, arg)
+        records.function_record.instructions += 1
+
+    match = re.search("\<([a-zA-Z0-9_@\.\-]+)\>\:", line)
+    if match:
+        records.function_record.name = match.group(1)
+        if records.function_record.instructions > 0 and verbose > 0:
+            print(records.function_record.name,
+                  "\t", ratio(records.function_record.counts["sse"] / records.function_record.instructions),
+                  "\t", ratio(records.function_record.counts["avx2"] / records.function_record.instructions),
+                  "\t", ratio(records.function_record.counts["avx512"] / records.function_record.instructions),
+                  "\t", records.function_record.scores["sse"],
+                  "\t", records.function_record.scores["avx2"],
+                  "\t", records.function_record.scores["avx512"])
+        if records.function_record.instructions > 0:
+            records.finalize_function_attrs()
+            records.function_record = FunctionRecord()
+
+    if sse_score >= 0.0:
+        sse_str = str(sse_score)
+        records.function_record.scores["sse"] += sse_score
+        records.function_record.counts["sse"] += 1
+
+    if avx2_score >= 0.0:
+        avx2_str = str(avx2_score)
+        records.function_record.scores["avx2"] += avx2_score
+        records.function_record.counts["avx2"] += 1
+
+    if avx512_score >= 0.0:
+        avx512_str = str(avx512_score)
+        records.function_record.scores["avx512"] += avx512_score
+        records.function_record.counts["avx512"] += 1
+
+    if verbose > 0:
+        print(sse_str,"\t",avx2_str,"\t", avx512_str,"\t", line)
+
+
+def do_file(filename: str, verbose:int, quiet:int) -> RecordKeeper:
+    records = RecordKeeper()
 
     if quiet == 0:
         print("Analyzing", filename)
 
-    function = ""
-
-    sse_count = 0
-    avx2_count = 0
-    avx512_count = 0
-
-    sse_score = 0.0
-    avx2_score = 0.0
-    avx512_score = 0.0
-
-    instructions = 0
-
-    total_sse_count = 0
-    total_avx2_count = 0
-    total_avx512_count = 0
-
-    total_sse_score = 0.0
-    total_avx2_score = 0.0
-    total_avx512_score = 0.0
-
-
-    out, err = subprocess.Popen(["objdump","-d", filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-    alllines = out.decode("latin-1")
-    lines =  alllines.split("\n")
-
-    for line in lines:
-        score_sse = -1.0
-        score_avx2 = -1.0
-        score_avx512 = -1.0
-
-        sse_str = " "
-        avx2_str = " "
-        avx512_str = ""
-
-        match = re.search("^(.*)\#.*", line)
-        if match:
-            line = match.group(1)
-        
-        match = re.search(".*[0-9a-f]+\:\t[0-9a-f\ ]+\t([a-zA-Z0-9]+) (.*)", line)
-
-        if match:
-            ins = match.group(1)
-            arg = match.group(2)
-
-            score_sse = is_sse(ins, arg)
-            score_avx2 = is_avx2(ins, arg)
-            score_avx512 = is_avx512(ins, arg)
-
-            avx2_str= " "
-            instructions += 1
-
-        match = re.search("\<([a-zA-Z0-9_@\.\-]+)\>\:", line)
-        if match:
-            funcname = match.group(1)
-            if instructions > 0 and verbose > 0:
-                print(function,"\t",ratio(sse_count/instructions),"\t", ratio(avx2_count / instructions), "\t", ratio(avx512_count/instructions), "\t", avx2_score,"\t", avx512_score)
-
-            if sse_count >= 1:
-                sse_functions[function] = sse_score
-                sse_functions_ratio[function] = 100.0 * sse_count / instructions
-            if avx2_count >= 1:
-                avx2_functions[function] = avx2_score
-                avx2_functions_ratio[function] = 100.0 * avx2_count / instructions
-            if avx512_count >= 1:
-                avx512_functions[function] = avx512_score
-                avx512_functions_ratio[function] = 100.0 * avx512_count/instructions
-
-            total_sse_count += sse_count
-            total_sse_score += sse_score
-
-            total_avx2_count += avx2_count
-            total_avx2_score += avx2_score
-
-            total_avx512_count += avx512_count
-            total_avx512_score += avx512_score
-
-            instructions = 0
-            function = funcname
-
-
-            sse_count = 0
-            avx2_count = 0
-            avx512_count = 0
-
-            sse_score = 0.0
-            avx2_score = 0.0
-            avx512_score = 0.0
-
-        if score_sse >= 0.0:
-            sse_str = str(score_sse)
-            sse_score += score_sse
-            sse_count += 1
-
-        if score_avx2 >= 0.0:
-            avx2_str = str(score_avx2)
-            avx2_score += score_avx2
-            avx2_count += 1
-
-        if score_avx512 >= 0.0:
-            avx512_str = str(score_avx512)
-            avx512_score += score_avx512
-            avx512_count += 1
-
-
-        if verbose > 0:
-            print(sse_str,"\t",avx2_str,"\t", avx512_str,"\t", line)
+    p = subprocess.Popen(["objdump","-d", filename], stdout=subprocess.PIPE)
+    for line in p.stdout:
+        process_objdump_line(records, line.decode("latin-1"), verbose)
+    output, _ =  p.communicate()
+    for line in output.decode("latin-1").splitlines():
+        process_objdump_line(records, line, verbose)
     if quiet <= 0:
-        print_top_functions()
+        print_top_functions(records)
         print()
-        print("File total (SSE): ", total_sse_count,"instructions with score", round(total_sse_score))
-        print("File total (AVX2): ", total_avx2_count,"instructions with score", round(total_avx2_score))
-        print("File total (AVX512): ", total_avx512_count,"instructions with score", round(total_avx512_score))
+        print("File total (SSE): ", records.total_counts["sse"],"instructions with score", round(records.total_scores["sse"]))
+        print("File total (AVX2): ", records.total_counts["avx2"],"instructions with score", round(records.total_scores["avx2"]))
+        print("File total (AVX512): ", records.total_counts["avx512"],"instructions with score", round(records.total_scores["avx512"]))
         print()
-    return 0
+    return records
 
 
 def main():
-    global verbose
-    global quiet
-    global total_avx2_count
-    global total_avx512_count
-    global total_avx2_score
-    global total_avx512_score
+    verbose = 0
+    quiet = 0
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--verbose", help="increase output verbosity", action="store_true")
     parser.add_argument("-q", "--quiet", help="decrease output verbosity", action="store_true")
@@ -311,34 +264,32 @@ def main():
         verbose = 0
         quiet = 1
 
-    do_file(args.filename)
+    totals = do_file(args.filename, verbose, quiet)
 
     if args.unlinksse:
-        if total_sse_count < 10 and total_sse_score <= 1.0:
-            print(args.filename, "\tsse count:", total_sse_count,"\tsse value:", ratio(total_sse_score))
+        if totals.total_counts["sse"] < 10 and totals.total_scores["sse"] <= 1.0:
+            print(args.filename, "\tsse count:", totals.total_counts["sse"],"\tsse value:", ratio(totals.total_scores["sse"]))
             try:
                 os.unlink(args.filename)
             except:
                 None
 
     if args.unlinkavx2:
-        if total_avx2_count < 10 and total_avx2_score <= 5.0:
-            print(args.filename, "\tavx2 count:", total_avx2_count,"\tavx2 value:", ratio(total_avx2_score))
+        if totals.total_counts["avx2"] < 10 and totals.total_scores["avx2"] <= 5.0:
+            print(args.filename, "\tavx2 count:", totals.total_counts["avx2"],"\tavx2 value:", ratio(totals.total_scores["avx2"]))
             try:
                 os.unlink(args.filename)
             except:
                 None
 
     if args.unlinkavx512:
-        if total_avx512_count < 20 and total_avx512_score < 10.0:
-            print(args.filename, "\tavx512 count:", total_avx512_count,"\tavx512 value:", ratio(total_avx512_score))
+        if totals.total_counts["avx512"] < 20 and totals.total_scores["avx512"] < 10.0:
+            print(args.filename, "\tavx512 count:", totals.total_counts["avx512"],"\tavx512 value:", ratio(totals.total_scores["avx512"]))
             try:
                 os.unlink(args.filename)
             except:
                 None
 
 
-
 if __name__ == '__main__':
     main()
-
