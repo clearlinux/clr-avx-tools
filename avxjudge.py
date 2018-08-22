@@ -48,6 +48,9 @@ avx2_instructions_hv = set([
 ])
 avx512_instructions_hv = set()
 
+# Minimum thresholds for keeping libraries
+min_count = 10
+min_score = 1.0
 
 class FunctionRecord():
     def __init__(self):
@@ -58,12 +61,19 @@ class FunctionRecord():
 
 
 class RecordKeeper():
-    def __init__(self):
+    def __init__(self, delete_type):
         self.total_counts = {"sse": 0, "avx2": 0, "avx512": 0}
         self.total_scores = {"sse": 0.0, "avx2": 0.0, "avx512": 0.0}
         self.functions = {"sse": dict(), "avx2": dict(), "avx512": dict()}
         self.ratios = {"sse": dict(), "avx2": dict(), "avx512": dict()}
         self.function_record = FunctionRecord()
+        self.delete_type = delete_type
+
+    def should_delete(self) -> bool:
+        if self.delete_type and self.total_counts[self.delete_type] < min_count and self.total_scores[self.delete_type] <= min_score:
+            return True
+        return False
+
     def finalize_function_attrs(self):
         for i in ("sse", "avx2", "avx512"):
             if self.function_record.counts[i] >= 1:
@@ -167,7 +177,7 @@ def print_top_functions(records:RecordKeeper) -> None:
         print()
 
 
-def process_objdump_line(records:RecordKeeper, line:str, verbose:int):
+def process_objdump_line(records:RecordKeeper, line:str, verbose:int, quiet:int) -> None:
     sse_score = -1.0
     avx2_score = -1.0
     avx512_score = -1.0
@@ -219,22 +229,25 @@ def process_objdump_line(records:RecordKeeper, line:str, verbose:int):
         records.function_record.scores["avx512"] += avx512_score
         records.function_record.counts["avx512"] += 1
 
+    if not records.should_delete() and quiet != 0:
+        sys.exit(0)
+
     if verbose > 0:
         print(sse_str,"\t",avx2_str,"\t", avx512_str,"\t", line)
 
 
-def do_file(filename: str, verbose:int, quiet:int) -> RecordKeeper:
-    records = RecordKeeper()
+def do_file(filename: str, verbose:int, quiet:int, delete_type:str) -> None:
+    records = RecordKeeper(delete_type)
 
     if quiet == 0:
         print("Analyzing", filename)
 
     p = subprocess.Popen(["objdump","-d", filename], stdout=subprocess.PIPE)
     for line in p.stdout:
-        process_objdump_line(records, line.decode("latin-1"), verbose)
+        process_objdump_line(records, line.decode("latin-1"), verbose, quiet)
     output, _ =  p.communicate()
     for line in output.decode("latin-1").splitlines():
-        process_objdump_line(records, line, verbose)
+        process_objdump_line(records, line, verbose, quiet)
     if quiet <= 0:
         print_top_functions(records)
         print()
@@ -242,7 +255,13 @@ def do_file(filename: str, verbose:int, quiet:int) -> RecordKeeper:
         print("File total (AVX2): ", records.total_counts["avx2"],"instructions with score", round(records.total_scores["avx2"]))
         print("File total (AVX512): ", records.total_counts["avx512"],"instructions with score", round(records.total_scores["avx512"]))
         print()
-    return records
+
+    if records.should_delete():
+        print(filename, "\t", delete_type, "count:", records.total_counts[delete_type],"\t", delete_type, "value:", ratio(records.total_scores[delete_type]))
+        try:
+            os.unlink(filename)
+        except:
+            None
 
 
 def main():
@@ -251,10 +270,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--verbose", help="increase output verbosity", action="store_true")
     parser.add_argument("-q", "--quiet", help="decrease output verbosity", action="store_true")
-    parser.add_argument("-1", "--unlinksse", help="unlink the file if it has no SSE instructions", action="store_true")
-    parser.add_argument("-2", "--unlinkavx2", help="unlink the file if it has no AVX2 instructions", action="store_true")
-    parser.add_argument("-5", "--unlinkavx512", help="unlink the file if it has no AVX512 instructions", action="store_true")
     parser.add_argument("filename", help = "The filename to inspect")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("-1", "--unlinksse", help="unlink the file if it has no SSE instructions", action="store_true")
+    group.add_argument("-2", "--unlinkavx2", help="unlink the file if it has no AVX2 instructions", action="store_true")
+    group.add_argument("-5", "--unlinkavx512", help="unlink the file if it has no AVX512 instructions", action="store_true")
 
     args = parser.parse_args()
     if args.verbose:
@@ -264,31 +284,16 @@ def main():
         verbose = 0
         quiet = 1
 
-    totals = do_file(args.filename, verbose, quiet)
-
     if args.unlinksse:
-        if totals.total_counts["sse"] < 10 and totals.total_scores["sse"] <= 1.0:
-            print(args.filename, "\tsse count:", totals.total_counts["sse"],"\tsse value:", ratio(totals.total_scores["sse"]))
-            try:
-                os.unlink(args.filename)
-            except:
-                None
+        deltype = "sse"
+    elif args.unlinkavx2:
+        deltype = "avx2"
+    elif args.unlinkavx512:
+        deltype = "avx512"
+    else:
+        deltype = ""
 
-    if args.unlinkavx2:
-        if totals.total_counts["avx2"] < 10 and totals.total_scores["avx2"] <= 5.0:
-            print(args.filename, "\tavx2 count:", totals.total_counts["avx2"],"\tavx2 value:", ratio(totals.total_scores["avx2"]))
-            try:
-                os.unlink(args.filename)
-            except:
-                None
-
-    if args.unlinkavx512:
-        if totals.total_counts["avx512"] < 20 and totals.total_scores["avx512"] < 10.0:
-            print(args.filename, "\tavx512 count:", totals.total_counts["avx512"],"\tavx512 value:", ratio(totals.total_scores["avx512"]))
-            try:
-                os.unlink(args.filename)
-            except:
-                None
+    do_file(args.filename, verbose, quiet, deltype)
 
 
 if __name__ == '__main__':
