@@ -263,6 +263,7 @@ def do_file(filename: str, verbose:int, quiet:int, delete_type:str) -> None:
         except:
             None
 
+    return records
 
 def main():
     verbose = 0
