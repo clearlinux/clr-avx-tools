@@ -1,3 +1,8 @@
+"""
+avxjudge.py is a tool that RPM builds use when building for AVX2 or AVX512 
+optimisations. It attempts to heuristically guess whether the library file has 
+enough AVX instructions to be worth keeping.
+"""
 #!/usr/bin/python3
 import subprocess
 import sys
