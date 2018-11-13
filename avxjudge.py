@@ -57,6 +57,8 @@ avx512_instructions_hv = set()
 min_count = 10
 min_score = 1.0
 
+debug = 0
+
 class FunctionRecord():
     def __init__(self):
         self.scores = {"sse": 0.0, "avx2": 0.0, "avx512": 0.0}
@@ -181,6 +183,8 @@ def print_top_functions(records:RecordKeeper) -> None:
         summarize(funcs, False)
         print()
 
+sse_avx2_duplicate_cnt = 0
+avx2_avx512_duplicate_cnt = 0
 
 def process_objdump_line(records:RecordKeeper, line:str, verbose:int, quiet:int) -> None:
     sse_score = -1.0
@@ -189,6 +193,10 @@ def process_objdump_line(records:RecordKeeper, line:str, verbose:int, quiet:int)
     sse_str = " "
     avx2_str = " "
     avx512_str = ""
+
+    global sse_avx2_duplicate_cnt
+    global avx2_avx512_duplicate_cnt
+    global debug
 
     match = re.search("^(.*)\#.*", line)
     if match:
@@ -234,6 +242,14 @@ def process_objdump_line(records:RecordKeeper, line:str, verbose:int, quiet:int)
         records.function_record.scores["avx512"] += avx512_score
         records.function_record.counts["avx512"] += 1
 
+    if sse_score >=0.0 and avx2_score >= 0.0 and debug:
+        sse_avx2_duplicate_cnt +=1
+        print("duplicate count for sse & avx2 ?", ins, arg, sse_avx2_duplicate_cnt)
+
+    if avx512_score >= 0.0 and avx2_score >= 0.0 and debug:
+        avx2_avx512_duplicate_cnt +=1
+        print("duplicate count for avx2 & avx512 ?", ins, arg, avx2_avx512_duplicate_cnt)
+
     if not records.should_delete() and quiet != 0:
         sys.exit(0)
 
@@ -242,6 +258,8 @@ def process_objdump_line(records:RecordKeeper, line:str, verbose:int, quiet:int)
 
 
 def do_file(filename: str, verbose:int, quiet:int, delete_type:str) -> None:
+    global debug
+
     records = RecordKeeper(delete_type)
 
     if quiet == 0:
@@ -260,6 +278,8 @@ def do_file(filename: str, verbose:int, quiet:int, delete_type:str) -> None:
         print("File total (AVX2): ", records.total_counts["avx2"],"instructions with score", round(records.total_scores["avx2"]))
         print("File total (AVX512): ", records.total_counts["avx512"],"instructions with score", round(records.total_scores["avx512"]))
         print()
+    if debug:
+        print("File duplicate count of sse&avx2", sse_avx2_duplicate_cnt, ", duplicate count of avx2&avx512", avx2_avx512_duplicate_cnt)
 
     if records.should_delete():
         print(filename, "\t", delete_type, "count:", records.total_counts[delete_type],"\t", delete_type, "value:", ratio(records.total_scores[delete_type]))
@@ -270,11 +290,14 @@ def do_file(filename: str, verbose:int, quiet:int, delete_type:str) -> None:
 
 
 def main():
+    global debug
+
     verbose = 0
     quiet = 0
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--verbose", help="increase output verbosity", action="store_true")
     parser.add_argument("-q", "--quiet", help="decrease output verbosity", action="store_true")
+    parser.add_argument("-d", "--debug", help="print out more debug info", action="store_true")
     parser.add_argument("filename", help = "The filename to inspect")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-1", "--unlinksse", help="unlink the file if it has no SSE instructions", action="store_true")
@@ -288,6 +311,9 @@ def main():
     if args.quiet:
         verbose = 0
         quiet = 1
+
+    if args.debug:
+        debug = 1
 
     if args.unlinksse:
         deltype = "sse"
