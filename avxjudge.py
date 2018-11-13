@@ -146,8 +146,6 @@ def is_avx512(instruction:str, args:str) -> float:
             val = max(val, 1.0)
         else:
             val = max(val, 0.01)
-        if is_avx2(instruction, args) > 0:
-            val = max(val, is_avx2(instruction, args))
 
 
     return val
@@ -207,9 +205,12 @@ def process_objdump_line(records:RecordKeeper, line:str, verbose:int, quiet:int)
         ins = match.group(1)
         arg = match.group(2)
 
-        sse_score = is_sse(ins, arg)
-        avx2_score = is_avx2(ins, arg)
         avx512_score = is_avx512(ins, arg)
+        if avx512_score <= 0:
+            avx2_score = is_avx2(ins, arg)
+        if avx2_score <= 0 and avx512_score <= 0:
+            sse_score = is_sse(ins, arg)
+
         records.function_record.instructions += 1
 
     match = re.search("\<([a-zA-Z0-9_@\.\-]+)\>\:", line)
