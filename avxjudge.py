@@ -107,7 +107,7 @@ def is_avx2(instruction:str, args:str) -> float:
     if "ymm" in args:
         if ("pd" in instruction or "ps" in instruction or instruction in avx2_instructions_ymm) and "xor" not in instruction and "vmov" not in instruction:
             val = 1.0
-        else:
+        if "@" not in args and "<" not in args:
             val = 0.01
 
     if instruction in avx2_instructions_lv:
@@ -116,7 +116,7 @@ def is_avx2(instruction:str, args:str) -> float:
         val = max(val, 1.0)
     if instruction in avx2_instructions_hv:
         val = max(val, 2.0)
-
+    
     return val
 
 def has_high_register(args: str) -> bool:
