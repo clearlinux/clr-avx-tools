@@ -250,6 +250,8 @@ def process_objdump_line(records:RecordKeeper, line:str, verbose:int, quiet:int)
     if avx512_score >= 0.0 and avx2_score >= 0.0 and debug:
         avx2_avx512_duplicate_cnt +=1
         print("duplicate count for avx2 & avx512 ?", ins, arg, avx2_avx512_duplicate_cnt)
+    if avx2_score >= 0.0 and debug:
+        print("AVX2 instruction ?", ins, arg)
 
     if not records.should_delete() and quiet != 0:
         sys.exit(0)
