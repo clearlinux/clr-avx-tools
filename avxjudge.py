@@ -93,7 +93,7 @@ class RecordKeeper():
 def is_sse(instruction:str, args:str) -> float:
 
     val: float = -1.0
-    if "xmm" in args:
+    if "%xmm" in args:
         if ("pd" in instruction or "ps" in instruction or instruction in sse_instructions_xmm):
             val = 1.0
         else:
@@ -104,7 +104,7 @@ def is_sse(instruction:str, args:str) -> float:
 def is_avx2(instruction:str, args:str) -> float:
     val: float = -1.0
 
-    if "ymm" in args:
+    if "%ymm" in args:
         if ("pd" in instruction or "ps" in instruction or instruction in avx2_instructions_ymm) and "xor" not in instruction and "vmov" not in instruction:
             val = 1.0
         else:
@@ -136,12 +136,12 @@ def is_avx512(instruction:str, args:str) -> float:
     if instruction in avx512_instructions_hv:
         val = max(val, 2.0)
 
-    if "xor" not in instruction and "ymm" in args and has_high_register(args):
+    if "xor" not in instruction and "%ymm" in args and has_high_register(args):
         val = max(val, 0.02)
     if "xor" not in instruction and has_high_register(args):
         val = max(val, 0.01)
 
-    if "zmm" in args:
+    if "%zmm" in args:
         if ("pd" in instruction or "ps" in instruction or "vpadd" in instruction or "vpsub" in instruction or instruction in avx2_instructions_ymm) and "xor" not in instruction and "vmov" not in instruction:
             val = max(val, 1.0)
         else:
