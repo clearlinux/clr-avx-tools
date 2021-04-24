@@ -39,7 +39,7 @@ avx2_instructions = set([
     "vfnmsub132ss", "vfnmsub213ss", "vfnmsub231ss", "vfnmsub132sd",
     "vfnmsub231sd", "vfnmsub213sd",
 ])
-avx512_instructions = set()
+avx512_instructions = set(["kmovw", "vpcmpltd", "kshiftrw", "kmovb"])
 
 # 2.0 value instructions
 avx2_instructions_hv = set([
@@ -137,9 +137,14 @@ def is_avx512(instruction:str, args:str) -> float:
         val = max(val, 2.0)
 
     if "xor" not in instruction and "%ymm" in args and has_high_register(args):
-        val = max(val, 0.02)
+        val = max(val, 0.2)
     if "xor" not in instruction and has_high_register(args):
-        val = max(val, 0.01)
+        val = max(val, 0.1)
+        
+    if "{%k" in args: # predicate instructions
+        val = max(val, 0.1)
+    if "{1to" in args: # broadcast-as-part-of-mov this saves a whole other instruction
+        val = max(val, 1.0)
 
     if "%zmm" in args:
         if ("pd" in instruction or "ps" in instruction or "vpadd" in instruction or "vpsub" in instruction or instruction in avx2_instructions_ymm) and "xor" not in instruction and "vmov" not in instruction:
