@@ -3,7 +3,8 @@ bindir = $(prefix)/bin
 bin_PROGRAMS = \
 	clr-avx2-move.pl \
 	clr-python-avx2 \
-	clr-python-avx512
+	clr-python-avx512 \
+	elf-move.py
 
 datadir = $(prefix)/share/clr-avx-tools
 data_FILES = \
