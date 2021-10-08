@@ -77,6 +77,9 @@ def write_outfile(args, filemap):
             btype = val[0]
             source = val[1]
             shasum = val[2]
+            # prefix files from /usr/bin with a bin prefix so autospec can put then in the right subpackage
+            if "/usr/bin/" in source:
+                shasum = "bin" + shasum
             if btype:
                 if args.skip:
                     continue
