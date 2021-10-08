@@ -65,7 +65,13 @@ def process_install(args):
 
 def write_outfile(args, filemap):
     """Use the filemap to populate targetidr."""
+    if len(filemap) == 0:
+        return
+
     os.makedirs(args.targetdir[0], exist_ok=True)
+    if os.path.basename(args.outfile[0]) != args.outfile[0]:
+        os.makedirs(os.path.dirname(args.outfile[0]), exist_ok=True)
+
     with open(args.outfile[0], 'a', encoding='utf-8') as ofile:
         for virtpath, val in filemap.items():
             btype = val[0]
