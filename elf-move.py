@@ -80,10 +80,13 @@ def write_outfile(args, filemap):
             # prefix files from /usr/bin with a bin prefix so autospec can put then in the right subpackage
             if "/usr/bin/" in source:
                 shasum = "bin" + shasum
-            if "/libexec/" in source:
+            elif "/libexec/" in source:
                 shasum = "exec" + shasum
-            if "/usr/lib64/" in source:
+            elif "/usr/lib64/" in source:
                 shasum = "lib" + shasum
+            else:
+                shasum = "other" + shasum
+                
             if btype:
                 if args.skip:
                     continue
