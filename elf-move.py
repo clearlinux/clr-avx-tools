@@ -49,6 +49,7 @@ def process_install(args):
 
             with open(filepath, 'rb', buffering=0) as ifile:
                 blk = ifile.readinto(memv)
+                sha.update(memv[:blk])
                 elf = memv[:4] == b'\x7fELF'
                 while blk := ifile.readinto(memv):
                     sha.update(memv[:blk])
