@@ -24,7 +24,7 @@ def setup_parser():
 
     parser.add_argument("-s", "--skip", action="store_true",
                         default=False,
-                        help="Don't process manipulate elf binaries")
+                        help="Don't process elf binaries")
 
     return parser
 
@@ -78,7 +78,8 @@ def write_outfile(args, filemap):
             btype = val[0]
             source = val[1]
             shasum = val[2]
-            # prefix files from /usr/bin with a bin prefix so autospec can put then in the right subpackage
+            # prefix files from /usr/bin with a bin prefix so autospec can put
+            # them in the right subpackage
             if "/usr/bin/" in source:
                 shasum = "bin" + shasum
             elif "/libexec/installed-tests" in source:
@@ -89,7 +90,7 @@ def write_outfile(args, filemap):
                 shasum = "lib" + shasum
             else:
                 shasum = "other" + shasum
-                
+
             if btype:
                 if args.skip:
                     continue
