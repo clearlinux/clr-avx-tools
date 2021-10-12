@@ -26,6 +26,10 @@ def setup_parser():
                         default=False,
                         help="Don't process elf binaries")
 
+    parser.add_argument("-p", "--path", default=None, nargs=1,
+                        action="append",
+                        help="Handle path regardless of file type")
+
     return parser
 
 
@@ -35,6 +39,9 @@ def process_install(args):
     Also output to stdout the non-elf file paths and hashes (useful to compare
     different build types).
     """
+    always_process = set()
+    for item in args.path:
+        always_process.add(item[0])
     filemap = OrderedDict()
     for root, _, files in os.walk(args.installdir[0]):
         for name in files:
@@ -53,7 +60,7 @@ def process_install(args):
                 elf = memv[:4] == b'\x7fELF'
                 while blk := ifile.readinto(memv):
                     sha.update(memv[:blk])
-                if elf:
+                if elf or filepath in always_process:
                     filemap[virtpath] = [args.type[0],
                                          filepath,
                                          sha.hexdigest()]
