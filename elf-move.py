@@ -26,9 +26,9 @@ def setup_parser():
                         default=False,
                         help="Don't process elf binaries")
 
-    parser.add_argument("-p", "--path", default=None, nargs=1,
+    parser.add_argument("-p", "--path", default=[], nargs=1,
                         action="append",
-                        help="Handle path regardless of file type")
+                        help="Handle path regardless of file type (overrides skip)")
 
     return parser
 
@@ -42,6 +42,7 @@ def process_install(args):
     always_process = set()
     for item in args.path:
         always_process.add(item[0])
+    args.path = always_process
     filemap = OrderedDict()
     for root, _, files in os.walk(args.installdir[0]):
         for name in files:
@@ -60,7 +61,7 @@ def process_install(args):
                 elf = memv[:4] == b'\x7fELF'
                 while blk := ifile.readinto(memv):
                     sha.update(memv[:blk])
-                if elf or filepath in always_process:
+                if elf or virtpath in args.path:
                     filemap[virtpath] = [args.type[0],
                                          filepath,
                                          sha.hexdigest()]
@@ -99,7 +100,7 @@ def write_outfile(args, filemap):
                 shasum = "other" + shasum
 
             if btype:
-                if args.skip:
+                if args.skip and virtpath not in args.path:
                     continue
                 ofile.write(f"{btype}\n")
                 ofile.write(f"{virtpath}\n")
