@@ -32,7 +32,7 @@ def make_patterns(modules):
     """Create regex patterns for each module."""
     patterns = {}
     for module in modules:
-        patterns[module] = re.compile(f"[ ]*{module}[ ]*[=><]")
+        patterns[module] = re.compile(f"[ ]*{module}[ ]*[!~=><]")
     return patterns
 
 
