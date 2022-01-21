@@ -2,6 +2,7 @@
 
 import argparse
 import hashlib
+import itertools
 import os
 from collections import OrderedDict
 
@@ -14,10 +15,10 @@ def setup_parser():
                         help="Binary type [avx, avx2, avx512]")
 
     parser.add_argument("installdir", default="", nargs=1,
-                        help="Target directory from install")
+                        help="Content directory to scan")
 
     parser.add_argument("targetdir", default="", nargs=1,
-                        help="Target directory from install")
+                        help="Target directory for output")
 
     parser.add_argument("outfile", default="", nargs=1,
                         help="Output file name")
@@ -25,6 +26,10 @@ def setup_parser():
     parser.add_argument("-s", "--skip", action="store_true",
                         default=False,
                         help="Don't process elf binaries")
+
+    parser.add_argument("-S", "--skip-path", default=[], nargs=1,
+                        action="append",
+                        help="Don't process files with the target path(s)")
 
     parser.add_argument("-p", "--path", default=[], nargs=1,
                         action="append",
@@ -82,6 +87,8 @@ def write_outfile(args, filemap):
     if len(filemap) == 0:
         return
 
+    skips = set(itertools.chain.from_iterable(args.skip_path))
+
     os.makedirs(args.targetdir[0], exist_ok=True)
     if os.path.basename(args.outfile[0]) != args.outfile[0]:
         os.makedirs(os.path.dirname(args.outfile[0]), exist_ok=True)
@@ -91,6 +98,8 @@ def write_outfile(args, filemap):
             btype = val[0]
             source = val[1]
             shasum = val[2]
+            if virtpath in skips:
+                continue
             # prefix files from /usr/bin with a bin prefix so autospec can put
             # them in the right subpackage
             if "/usr/bin/" in source:
