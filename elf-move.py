@@ -49,6 +49,8 @@ def process_install(args):
             filepath = os.path.join(root, name)
             if os.path.islink(filepath):
                 continue
+            if os.stat(filepath).st_mode & os.path.stat.S_ISUID != 0:
+                continue
             sha = hashlib.sha256()
             data = bytearray(4096)
             memv = memoryview(data)
