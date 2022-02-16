@@ -54,7 +54,10 @@ def process_install(args):
             filepath = os.path.join(root, name)
 #            if os.path.islink(filepath) and "/usr/lib64/" not in filepath:
 #                continue
-            if os.stat(filepath).st_mode & os.path.stat.S_ISUID != 0:
+            try:
+                if os.stat(filepath).st_mode & os.path.stat.S_ISUID != 0:
+                    continue
+            except:
                 continue
             sha = hashlib.sha256()
             data = bytearray(4096)
