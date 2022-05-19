@@ -126,6 +126,10 @@ def write_outfile(args, filemap):
             else:
                 print(f"{virtpath} {shasum}")
 
+    # Don't leave around empty filemaps
+    if os.path.getsize(args.outfile[0]) == 0:
+        os.remove(args.outfile[0])
+
 
 def main():
     """Entry point function."""
