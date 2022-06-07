@@ -189,6 +189,15 @@ def print_top_functions(records:RecordKeeper) -> None:
 sse_avx2_duplicate_cnt = 0
 avx2_avx512_duplicate_cnt = 0
 
+def print_function_summary(records):
+    print(records.function_record.name,
+          "\t", ratio(records.function_record.counts["sse"] / records.function_record.instructions),
+          "\t", ratio(records.function_record.counts["avx2"] / records.function_record.instructions),
+          "\t", ratio(records.function_record.counts["avx512"] / records.function_record.instructions),
+          "\t", records.function_record.scores["sse"],
+          "\t", records.function_record.scores["avx2"],
+          "\t", records.function_record.scores["avx512"])
+
 def process_objdump_line(records:RecordKeeper, line:str, verbose:int, quiet:int) -> None:
     sse_score = -1.0
     avx2_score = -1.0
@@ -222,13 +231,7 @@ def process_objdump_line(records:RecordKeeper, line:str, verbose:int, quiet:int)
     if match:
         records.function_record.name = match.group(1)
         if records.function_record.instructions > 0 and verbose > 0:
-            print(records.function_record.name,
-                  "\t", ratio(records.function_record.counts["sse"] / records.function_record.instructions),
-                  "\t", ratio(records.function_record.counts["avx2"] / records.function_record.instructions),
-                  "\t", ratio(records.function_record.counts["avx512"] / records.function_record.instructions),
-                  "\t", records.function_record.scores["sse"],
-                  "\t", records.function_record.scores["avx2"],
-                  "\t", records.function_record.scores["avx512"])
+            print_function_summary(records)
         if records.function_record.instructions > 0:
             records.finalize_function_attrs()
             records.function_record = FunctionRecord()
