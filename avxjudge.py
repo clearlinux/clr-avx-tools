@@ -210,6 +210,18 @@ def process_objdump_line(records:RecordKeeper, line:str, verbose:int, quiet:int)
     global avx2_avx512_duplicate_cnt
     global debug
 
+    match = re.search("^$", line)
+    if match:
+        if records.function_record.instructions > 0 and verbose > 0:
+            print()
+            print_function_summary(records)
+        if verbose > 0:
+            print()
+        if records.function_record.instructions > 0:
+            records.finalize_function_attrs()
+            records.function_record = FunctionRecord()
+        return
+
     match = re.search("^(.*)\#.*", line)
     if match:
         line = match.group(1)
@@ -230,11 +242,6 @@ def process_objdump_line(records:RecordKeeper, line:str, verbose:int, quiet:int)
     match = re.search("\<([a-zA-Z0-9_@\.\-]+)\>\:", line)
     if match:
         records.function_record.name = match.group(1)
-        if records.function_record.instructions > 0 and verbose > 0:
-            print_function_summary(records)
-        if records.function_record.instructions > 0:
-            records.finalize_function_attrs()
-            records.function_record = FunctionRecord()
 
     if sse_score >= 0.0:
         sse_str = str(sse_score)
