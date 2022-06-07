@@ -239,7 +239,7 @@ def process_objdump_line(records:RecordKeeper, line:str, verbose:int, quiet:int)
 
         records.function_record.instructions += 1
 
-    match = re.search("\<([a-zA-Z0-9_@\.\-]+)\>\:", line)
+    match = re.search(r'^[0-9a-f]+ <(.+)>:$', line)
     if match:
         records.function_record.name = match.group(1)
 
