@@ -12,7 +12,7 @@ def setup_parser():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("type", default="", nargs=1,
-                        help="Binary type [avx, avx2, avx512]")
+                        help="Binary type [avx2, avx512]")
 
     parser.add_argument("installdir", default="", nargs=1,
                         help="Content directory to scan")
@@ -52,8 +52,6 @@ def process_install(args):
     for root, _, files in os.walk(args.installdir[0]):
         for name in files:
             filepath = os.path.join(root, name)
-#            if os.path.islink(filepath) and "/usr/lib64/" not in filepath:
-#                continue
             try:
                 if os.stat(filepath).st_mode & os.path.stat.S_ISUID != 0:
                     continue
@@ -92,7 +90,14 @@ def write_outfile(args, filemap):
 
     skips = set(itertools.chain.from_iterable(args.skip_path))
 
-    os.makedirs(args.targetdir[0], exist_ok=True)
+    optimized_dir = os.path.join(args.targetdir[0],
+                                 'usr/share/clear/optimized-elf/')
+    hwcaps_dir = os.path.join(args.targetdir[0], 'usr/lib64/glibc-hwcaps')
+    avx2_ldir = os.path.join(hwcaps_dir, 'x86-64-v3')
+    avx512_ldir = os.path.join(hwcaps_dir, 'x86-64-v4')
+    os.makedirs(optimized_dir, exist_ok=True)
+    os.makedirs(avx2_ldir, exist_ok=True)
+    os.makedirs(avx512_ldir, exist_ok=True)
     if os.path.basename(args.outfile[0]) != args.outfile[0]:
         os.makedirs(os.path.dirname(args.outfile[0]), exist_ok=True)
 
@@ -112,17 +117,28 @@ def write_outfile(args, filemap):
             elif "/libexec/" in source:
                 shasum = "exec" + shasum
             elif "/usr/lib64/" in source:
-                shasum = "lib" + shasum
+                # Install /usr/lib64 content directly.
+                # This is okay as the libs are only are used when the
+                # required hardware exists.
+                if btype == 'avx2':
+                    os.rename(source,
+                              os.path.join(avx2_ldir,
+                                           os.path.basename(source)))
+                elif btype == 'avx512':
+                    os.rename(source,
+                              os.path.join(avx512_ldir,
+                                           os.path.basename(source)))
             else:
                 shasum = "other" + shasum
 
-            if btype:
+            # /usr/lib64 content was installed already
+            if btype and "/usr/lib64/" not in source:
                 if args.skip and virtpath not in args.path:
                     continue
                 ofile.write(f"{btype}\n")
                 ofile.write(f"{virtpath}\n")
                 ofile.write(f"{shasum}\n")
-                os.rename(source, os.path.join(args.targetdir[0], shasum))
+                os.rename(source, os.path.join(optimized_dir, shasum))
             else:
                 print(f"{virtpath} {shasum}")
 
