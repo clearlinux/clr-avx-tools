@@ -116,7 +116,7 @@ def write_outfile(args, filemap):
                 shasum = "tests" + shasum
             elif "/libexec/" in source:
                 shasum = "exec" + shasum
-            elif os.path.dirname(source) == "/usr/lib64":
+            elif os.path.dirname(source).endswidth("/usr/lib64"):
                 # Install /usr/lib64 content directly.
                 # This is okay as the libs are only are used when the
                 # required hardware exists.
