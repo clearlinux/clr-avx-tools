@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import itertools
 import os
+import sys
 from collections import OrderedDict
 
 
@@ -151,6 +152,12 @@ def main():
     """Entry point function."""
     parser = setup_parser()
     args = parser.parse_args()
+    if args.targetdir[0].endswith('/usr/share/clear/optimized-elf/'):
+        # Catch previous invocation with targetdir being the
+        # optimized-elf directory that is no longer correct.
+        print('Error: Full path for optimized-elf detected!')
+        print(' targetdir should be the root of the output directory.')
+        sys.exit(-1)
 
     filemap = process_install(args)
 
