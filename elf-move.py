@@ -133,7 +133,7 @@ def write_outfile(args, filemap):
                 shasum = "other" + shasum
 
             # /usr/lib64 content was installed already
-            if btype and "/usr/lib64/" not in source:
+            if btype and not os.path.dirname(source).endswith("/usr/lib64"):
                 if args.skip and virtpath not in args.path:
                     continue
                 ofile.write(f"{btype}\n")
