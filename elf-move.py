@@ -4,7 +4,6 @@ import argparse
 import hashlib
 import itertools
 import os
-import shutil
 import sys
 from collections import OrderedDict
 
@@ -107,7 +106,7 @@ def copy_original(virtpath, targetdir, optimized_dir):
         return
     else:
         shasum = "other" + shasum
-    shutil.copy2(filename, os.path.join(optimized_dir, shasum))
+    os.link(filename, os.path.join(optimized_dir, shasum))
 
 
 def write_outfile(args, filemap):
