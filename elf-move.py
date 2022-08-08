@@ -85,10 +85,11 @@ def process_install(args):
     return filemap
 
 
-def copy_original(filename, targetdir):
+def copy_original(virtpath, targetdir, optimized_dir):
     data = bytearray(4096)
     sha = hashlib.sha256()
     memv = memoryview(data)
+    filename = os.path.join(targetdir, virtpath[1:])
     with open(filename, 'rb', buffering=0) as ifile:
         blk = ifile.readinto(memv)
         sha.update(filename.encode())
@@ -106,7 +107,7 @@ def copy_original(filename, targetdir):
         return
     else:
         shasum = "other" + shasum
-    shutil.copy2(filename, os.path.join(targetdir, shasum))
+    shutil.copy2(filename, os.path.join(optimized_dir, shasum))
 
 
 def write_outfile(args, filemap):
@@ -134,7 +135,6 @@ def write_outfile(args, filemap):
             shasum = val[2]
             if virtpath in skips:
                 continue
-            copy_original(source, optimized_dir)
             # prefix files from /usr/bin with a bin prefix so autospec can put
             # them in the right subpackage
             if "/usr/bin/" in source:
@@ -162,6 +162,7 @@ def write_outfile(args, filemap):
             if btype and not os.path.dirname(source).endswith("/usr/lib64"):
                 if args.skip and virtpath not in args.path:
                     continue
+                copy_original(virtpath, args.targetdir[0], optimized_dir)
                 ofile.write(f"{btype}\n")
                 ofile.write(f"{virtpath}\n")
                 ofile.write(f"{shasum}\n")
