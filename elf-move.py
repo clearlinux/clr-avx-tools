@@ -82,6 +82,32 @@ def process_install(args):
                                          filepath,
                                          sha.hexdigest()]
     return filemap
+    
+    
+def copy_original(filename, targetdir):
+    data = bytearray(4096)
+    sha = hashlib.sha256()
+    memv = memoryview(data)
+    with open(filename, 'rb', buffering=0) as ifile:
+        blk = ifile.readinto(memv)
+        sha.update(filepath.encode())
+        sha.update(memv[:blk])
+        while blk := ifile.readinto(memv):
+            sha.update(memv[:blk])
+    shasum = sha.hexdigest()
+    if "/usr/bin/" in source:
+        shasum = "bin" + shasum
+    elif "/libexec/installed-tests" in source:
+        shasum = "tests" + shasum
+    elif "/libexec/" in source:
+        shasum = "exec" + shasum
+    elif os.path.dirname(filename).endswith("/usr/lib64"):
+        return
+    else:
+        shasum = "other" + shasum
+    
+    os.copy(filename, os.path.join(targetdir, shasum));
+        
 
 
 def write_outfile(args, filemap):
@@ -109,6 +135,8 @@ def write_outfile(args, filemap):
             shasum = val[2]
             if virtpath in skips:
                 continue
+                
+            copy_original(source, optimized_dir);
             # prefix files from /usr/bin with a bin prefix so autospec can put
             # them in the right subpackage
             if "/usr/bin/" in source:
