@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import itertools
 import os
+import shutil
 import sys
 from collections import OrderedDict
 
@@ -82,32 +83,30 @@ def process_install(args):
                                          filepath,
                                          sha.hexdigest()]
     return filemap
-    
-    
+
+
 def copy_original(filename, targetdir):
     data = bytearray(4096)
     sha = hashlib.sha256()
     memv = memoryview(data)
     with open(filename, 'rb', buffering=0) as ifile:
         blk = ifile.readinto(memv)
-        sha.update(filepath.encode())
+        sha.update(filename.encode())
         sha.update(memv[:blk])
         while blk := ifile.readinto(memv):
             sha.update(memv[:blk])
     shasum = sha.hexdigest()
-    if "/usr/bin/" in source:
+    if "/usr/bin/" in filename:
         shasum = "bin" + shasum
-    elif "/libexec/installed-tests" in source:
+    elif "/libexec/installed-tests" in filename:
         shasum = "tests" + shasum
-    elif "/libexec/" in source:
+    elif "/libexec/" in filename:
         shasum = "exec" + shasum
     elif os.path.dirname(filename).endswith("/usr/lib64"):
         return
     else:
         shasum = "other" + shasum
-    
-    os.copy(filename, os.path.join(targetdir, shasum));
-        
+    shutil.copy2(filename, os.path.join(targetdir, shasum))
 
 
 def write_outfile(args, filemap):
@@ -135,8 +134,7 @@ def write_outfile(args, filemap):
             shasum = val[2]
             if virtpath in skips:
                 continue
-                
-            copy_original(source, optimized_dir);
+            copy_original(source, optimized_dir)
             # prefix files from /usr/bin with a bin prefix so autospec can put
             # them in the right subpackage
             if "/usr/bin/" in source:
