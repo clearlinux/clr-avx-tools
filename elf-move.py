@@ -106,7 +106,10 @@ def copy_original(virtpath, targetdir, optimized_dir):
         return
     else:
         shasum = "other" + shasum
-    os.link(filename, os.path.join(optimized_dir, shasum))
+    try:
+        os.link(filename, os.path.join(optimized_dir, shasum))
+    except:
+        None
 
 
 def write_outfile(args, filemap):
