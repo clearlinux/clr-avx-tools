@@ -7,6 +7,7 @@ import os
 import sys
 from collections import OrderedDict
 
+btype = "SSE4.2"
 
 def setup_parser():
     """Create commandline argument parser."""
@@ -40,6 +41,7 @@ def setup_parser():
 
 
 def process_install(args):
+    global btype
     """Create output based on the installdir.
 
     Also output to stdout the non-elf file paths and hashes (useful to compare
@@ -69,10 +71,8 @@ def process_install(args):
                 # some files have the same contents so include the full path
                 # in the hash
                 sha.update(filepath.encode())
-                sha.update(memv[:blk])
+                sha.update(btype.encode())
                 elf = memv[:4] == b'\x7fELF'
-                while blk := ifile.readinto(memv):
-                    sha.update(memv[:blk])
                 if elf or virtpath in args.path:
                     filemap[virtpath] = [args.type[0],
                                          filepath,
@@ -89,12 +89,8 @@ def copy_original(virtpath, targetdir, optimized_dir):
     sha = hashlib.sha256()
     memv = memoryview(data)
     filename = os.path.join(targetdir, virtpath[1:])
-    with open(filename, 'rb', buffering=0) as ifile:
-        blk = ifile.readinto(memv)
-        sha.update(filename.encode())
-        sha.update(memv[:blk])
-        while blk := ifile.readinto(memv):
-            sha.update(memv[:blk])
+    sha.update(filename.encode())
+    sha.update("SSE4.2".encode())
     shasum = sha.hexdigest()
     if "/usr/bin/" in filename:
         shasum = "bin" + shasum
@@ -113,6 +109,7 @@ def copy_original(virtpath, targetdir, optimized_dir):
 
 
 def write_outfile(args, filemap):
+    global btype
     """Use the filemap to populate targetidr."""
     if len(filemap) == 0:
         return
@@ -132,7 +129,6 @@ def write_outfile(args, filemap):
 
     with open(args.outfile[0], 'a', encoding='utf-8') as ofile:
         for virtpath, val in filemap.items():
-            btype = val[0]
             source = val[1]
             shasum = val[2]
             if virtpath in skips:
@@ -178,9 +174,11 @@ def write_outfile(args, filemap):
 
 
 def main():
+    global btype;
     """Entry point function."""
     parser = setup_parser()
     args = parser.parse_args()
+    btype = val[0];
     if args.targetdir[0].endswith('/usr/share/clear/optimized-elf/'):
         # Catch previous invocation with targetdir being the
         # optimized-elf directory that is no longer correct.
