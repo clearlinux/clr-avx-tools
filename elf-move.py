@@ -70,7 +70,7 @@ def process_install(args):
                 blk = ifile.readinto(memv)
                 # some files have the same contents so include the full path
                 # in the hash
-                sha.update(filepath.encode())
+                sha.update(virtpath.encode())
                 sha.update(btype.encode())
                 elf = memv[:4] == b'\x7fELF'
                 if elf or virtpath in args.path:
