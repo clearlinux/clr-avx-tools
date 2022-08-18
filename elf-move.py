@@ -89,7 +89,7 @@ def copy_original(virtpath, targetdir, optimized_dir):
     sha = hashlib.sha256()
     memv = memoryview(data)
     filename = os.path.join(targetdir, virtpath[1:])
-    sha.update(filename.encode())
+    sha.update(virtpath.encode())
     sha.update("SSE4.2".encode())
     shasum = sha.hexdigest()
     if "/usr/bin/" in filename:
@@ -178,7 +178,7 @@ def main():
     """Entry point function."""
     parser = setup_parser()
     args = parser.parse_args()
-    btype = val[0];
+    btype = args.type[0];
     if args.targetdir[0].endswith('/usr/share/clear/optimized-elf/'):
         # Catch previous invocation with targetdir being the
         # optimized-elf directory that is no longer correct.
