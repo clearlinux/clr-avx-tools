@@ -59,19 +59,21 @@ def process_install(args):
             virtpath = os.path.join('/',
                                     filepath.removeprefix(args.installdir))
 
-            # some files have the same contents so include the full path
-            # in the hash
-            sha.update(virtpath.encode())
-            sha.update(args.btype.encode())
-            elf = memv[:4] == b'\x7fELF'
-            if elf or virtpath in args.path:
-                filemap[virtpath] = [True,
-                                     filepath,
-                                     sha.hexdigest()]
-            else:
-                filemap[virtpath] = [False,
-                                     filepath,
-                                     sha.hexdigest()]
+            with open(filepath, 'rb', buffering=0) as ifile:
+                ifile.readinto(memv)
+                # some files have the same contents so include the full path
+                # in the hash
+                sha.update(virtpath.encode())
+                sha.update(args.btype.encode())
+                elf = memv[:4] == b'\x7fELF'
+                if elf or virtpath in args.path:
+                    filemap[virtpath] = [True,
+                                         filepath,
+                                         sha.hexdigest()]
+                else:
+                    filemap[virtpath] = [False,
+                                         filepath,
+                                         sha.hexdigest()]
     return filemap
 
 
