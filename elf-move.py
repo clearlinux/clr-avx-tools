@@ -65,11 +65,11 @@ def process_install(args):
             sha.update(args.btype.encode())
             elf = memv[:4] == b'\x7fELF'
             if elf or virtpath in args.path:
-                filemap[virtpath] = [args.btype,
+                filemap[virtpath] = [True,
                                      filepath,
                                      sha.hexdigest()]
             else:
-                filemap[virtpath] = [None,
+                filemap[virtpath] = [False,
                                      filepath,
                                      sha.hexdigest()]
     return filemap
@@ -117,6 +117,7 @@ def write_outfile(args, filemap):
 
     with open(args.outfile, 'a', encoding='utf-8') as ofile:
         for virtpath, val in filemap.items():
+            elf = val[0]
             source = val[1]
             shasum = val[2]
             if virtpath in skips:
@@ -145,7 +146,7 @@ def write_outfile(args, filemap):
                 shasum = "other" + shasum
 
             # /usr/lib64 content was installed already
-            if args.btype and not os.path.dirname(source).endswith("/usr/lib64"):
+            if elf and not os.path.dirname(source).endswith("/usr/lib64"):
                 if args.skip and virtpath not in args.path:
                     continue
                 copy_original(virtpath, args.targetdir, optimized_dir)
