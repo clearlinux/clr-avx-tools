@@ -18,3 +18,6 @@ install:
 	install -d $(bindir) $(datadir)
 	install -m 755 -t $(bindir) $(bin_PROGRAMS)
 	install -m 644 -t $(datadir) $(data_FILES)
+
+test:
+	@./elf-move-test.sh
