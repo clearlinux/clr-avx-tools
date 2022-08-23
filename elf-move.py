@@ -168,7 +168,7 @@ def main():
     """Entry point function."""
     parser = setup_parser()
     args = parser.parse_args()
-    if args.btype != "avx2" and args.btype != "avx512":
+    if args.btype not in ("avx2", "avx512"):
         print(f"Error: btype '{args.btype}' not supported (needs to be either avx2 or avx512)")
         sys.exit(-1)
     if args.targetdir.endswith('/usr/share/clear/optimized-elf/'):
