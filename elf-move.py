@@ -77,11 +77,12 @@ def process_install(args):
     return filemap
 
 
-def copy_original(virtpath, targetdir, optimized_dir):
+def copy_original(virtpath, targetdir, optimized_dir, ofile):
+    btype = "SSE4.2"
     sha = hashlib.sha256()
     filename = os.path.join(targetdir, virtpath[1:])
     sha.update(virtpath.encode())
-    sha.update("SSE4.2".encode())
+    sha.update(btype.encode())
     shasum = sha.hexdigest()
     if "/usr/bin/" in filename:
         shasum = "bin" + shasum
@@ -95,6 +96,10 @@ def copy_original(virtpath, targetdir, optimized_dir):
         shasum = "other" + shasum
     try:
         os.link(filename, os.path.join(optimized_dir, shasum))
+        # if the link is happy, add append original file to the filemap
+        ofile.write(f"{btype}\n")
+        ofile.write(f"{virtpath}\n")
+        ofile.write(f"{shasum}\n")
     except:
         pass
 
@@ -151,7 +156,7 @@ def write_outfile(args, filemap):
             if elf and not os.path.dirname(source).endswith("/usr/lib64"):
                 if args.skip and virtpath not in args.path:
                     continue
-                copy_original(virtpath, args.targetdir, optimized_dir)
+                copy_original(virtpath, args.targetdir, optimized_dir, ofile)
                 ofile.write(f"{args.btype}\n")
                 ofile.write(f"{virtpath}\n")
                 ofile.write(f"{shasum}\n")
