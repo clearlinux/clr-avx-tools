@@ -5,6 +5,7 @@ bin_PROGRAMS = \
 	clr-python-avx2 \
 	clr-python-avx512 \
 	elf-move.py \
+	filemap-verify.py \
 	pypi-dep-fix.py
 
 datadir = $(prefix)/share/clr-avx-tools
