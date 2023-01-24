@@ -11,6 +11,12 @@ avx2
 /libexec/installed-tests/tfile
 testsbf720cc6e903b8ccf86e842d0430fd32970bc41bde3b610ee3148ca1d492eb98
 SSE4.2
+/usr/foo/usr/lib64/oofile
+other718918195af7bf5d13dc6b59b096400fe6ef6b6d4bce9da60489b141158a8eaf
+avx2
+/usr/foo/usr/lib64/oofile
+other11636a1f678ba08330ba0491cb9d3eba062d1318f00a01d0af7d6b950a281c54
+SSE4.2
 /usr/bin/keep-file
 bin1f3d63a95df6b59ab4db9c074b158405094d9095e2d2fa0bcc17564065974b16
 avx2

@@ -11,6 +11,12 @@ avx512
 /libexec/installed-tests/tfile
 testse3b059ef79177facb34abe4331e9beb55718ac48d538970824a5e85b5eea6b26
 SSE4.2
+/usr/foo/usr/lib64/oofile
+other718918195af7bf5d13dc6b59b096400fe6ef6b6d4bce9da60489b141158a8eaf
+avx512
+/usr/foo/usr/lib64/oofile
+otherca686cd656124dd9f6b8a29530044a2a30ce397479af4d81f54a660405eecac4
+SSE4.2
 /usr/bin/keep-file
 bin1f3d63a95df6b59ab4db9c074b158405094d9095e2d2fa0bcc17564065974b16
 avx512
