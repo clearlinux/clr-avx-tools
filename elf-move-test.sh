@@ -19,10 +19,8 @@ function test_run() {
     eval local outdir='$OUTDIR'$avx
     if [ $avx -eq 2 ]; then
         local outdirv="${outdir}/V3"
-        local hwcap="${outdir}/usr/lib64/glibc-hwcaps/x86-64-v3/"
     else
         local outdirv="${outdir}/V4"
-        local hwcap="${outdir}/usr/lib64/glibc-hwcaps/x86-64-v4/"
     fi
     eval local builddir='$BUILDDIR'$avx
     local bindir="${builddir}/usr/bin"
@@ -64,7 +62,7 @@ function test_run() {
     [ ! -f "${obindir}/setuid-file" ]
     [ ! -f "${obindir}/skip-file" ]
     [ -f "${obindir}/keep-file" ]
-    [ -f "${hwcap}/lfile" ]
+    [ -f "${olibdir}/lfile" ]
     [ -f "${oothdir}/ofile" ]
     [ -f "${oexecdir}/efile" ]
     [ -f "${otestdir}/tfile" ]

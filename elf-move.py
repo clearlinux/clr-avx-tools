@@ -89,12 +89,7 @@ def move_content(args, filemap):
     else:
         return
     optimized_dir = os.path.join(args.targetdir, optimized_prefix)
-    hwcaps_dir = os.path.join(args.targetdir, 'usr/lib64/glibc-hwcaps')
-    avx2_ldir = os.path.join(hwcaps_dir, 'x86-64-v3')
-    avx512_ldir = os.path.join(hwcaps_dir, 'x86-64-v4')
     os.makedirs(optimized_dir, exist_ok=True)
-    os.makedirs(avx2_ldir, exist_ok=True)
-    os.makedirs(avx512_ldir, exist_ok=True)
     for virtpath, val in filemap.items():
         elf = val[0]
         source = val[1]
@@ -102,22 +97,6 @@ def move_content(args, filemap):
             if args.verbose:
                 print(f"Skipping path {virtpath}")
             continue
-        if os.path.dirname(virtpath) == "/usr/lib64":
-            if args.verbose:
-                print(f"Moving {virtpath} content to hwcaps dir for {args.btype}")
-            # Install /usr/lib64 content directly.
-            # This is okay as the libs are only are used when the
-            # required hardware exists.
-            if args.btype == 'avx2':
-                os.rename(source,
-                          os.path.join(avx2_ldir,
-                                       os.path.basename(source)))
-            elif args.btype == 'avx512':
-                os.rename(source,
-                          os.path.join(avx512_ldir,
-                                       os.path.basename(source)))
-            continue
-
         if elf:
             if args.skip and virtpath not in args.path:
                 if args.verbose:
