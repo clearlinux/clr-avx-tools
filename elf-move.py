@@ -102,6 +102,14 @@ def move_content(args, filemap):
                 if args.verbose:
                     print(f"Skipping elf file {virtpath}")
                 continue
+            vdname = os.path.dirname(virtpath)
+            vbname = os.path.basename(virtpath)
+            if vdname in ('/bin', '/sbin', '/usr/sbin'):
+                virtpath = os.path.join('/usr/bin', vbname)
+            elif vdname == '/lib':
+                virtpath = os.path.join('/usr/lib', vbname)
+            elif vdname == '/lib64':
+                virtpath = os.path.join('/usr/lib64', vbname)
             dest = os.path.join(optimized_dir, virtpath[1:])
             os.makedirs(os.path.dirname(dest), exist_ok=True)
             if args.verbose:

@@ -24,6 +24,7 @@ function test_run() {
     fi
     eval local builddir='$BUILDDIR'$avx
     local bindir="${builddir}/usr/bin"
+    local sbindir="${builddir}/usr/sbin"
     local libdir="${builddir}/usr/lib64"
     local othdir="${libdir}/other"
     local execdir="${builddir}/libexec"
@@ -31,6 +32,7 @@ function test_run() {
     local oddothdir="${builddir}/usr/foo/usr/lib64"
 
     local obindir="${outdirv}/usr/bin"
+    local osbindir="${outdirv}/usr/bin"
     local olibdir="${outdirv}/usr/lib64"
     local oothdir="${olibdir}/other"
     local oexecdir="${outdirv}/libexec"
@@ -39,6 +41,7 @@ function test_run() {
 
     mkdir -p "${othdir}"
     mkdir -p "${bindir}"
+    mkdir -p "${sbindir}"
     mkdir -p "${testdir}"
     mkdir -p "${oddothdir}"
     mkdir -p "${oothdir}"
@@ -46,6 +49,7 @@ function test_run() {
     mkdir -p "${otestdir}"
     mkdir -p "${ooddothdir}"
     echo -n -e \\x7f\\x45\\x4c\\x46\\xff > "${bindir}/bfile"
+    echo -n -e \\x7f\\x45\\x4c\\x46\\xff > "${bindir}/sbfile"
     echo -n -e \\x7f\\x45\\x4c\\x46\\xff > "${bindir}/setuid-file"
     chmod u+s "${bindir}/setuid-file"
     echo -n -e \\x7f\\x45\\x4c\\x46\\xff > "${bindir}/skip-file"
@@ -59,6 +63,7 @@ function test_run() {
     python3 elf-move.py "avx${avx}" "${builddir}" "${outdir}" --skip-path /usr/bin/skip-file --path /usr/bin/keep-file &> /dev/null
 
     [ -f "${obindir}/bfile" ]
+    [ -f "${obindir}/sbfile" ]
     [ ! -f "${obindir}/setuid-file" ]
     [ ! -f "${obindir}/skip-file" ]
     [ -f "${obindir}/keep-file" ]
