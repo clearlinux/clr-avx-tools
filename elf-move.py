@@ -53,6 +53,8 @@ def process_install(args):
     for root, _, files in os.walk(args.installdir):
         for name in files:
             filepath = os.path.join(root, name)
+            if os.path.islink(filepath):
+                continue
             try:
                 if os.stat(filepath).st_mode & os.path.stat.S_ISUID != 0:
                     continue

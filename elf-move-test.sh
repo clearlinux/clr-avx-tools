@@ -49,6 +49,7 @@ function test_run() {
     mkdir -p "${otestdir}"
     mkdir -p "${ooddothdir}"
     echo -n -e \\x7f\\x45\\x4c\\x46\\xff > "${bindir}/bfile"
+	ln -s "${bindir}/bfile" "${bindir}/lbfile"
     echo -n -e \\x7f\\x45\\x4c\\x46\\xff > "${bindir}/sbfile"
     echo -n -e \\x7f\\x45\\x4c\\x46\\xff > "${bindir}/setuid-file"
     chmod u+s "${bindir}/setuid-file"
@@ -63,6 +64,7 @@ function test_run() {
     python3 elf-move.py "avx${avx}" "${builddir}" "${outdir}" --skip-path /usr/bin/skip-file --path /usr/bin/keep-file &> /dev/null
 
     [ -f "${obindir}/bfile" ]
+    [ ! -f "${obindir}/lbfile" ]
     [ -f "${obindir}/sbfile" ]
     [ ! -f "${obindir}/setuid-file" ]
     [ ! -f "${obindir}/skip-file" ]
