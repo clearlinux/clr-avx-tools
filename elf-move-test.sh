@@ -49,7 +49,7 @@ function test_run() {
     mkdir -p "${otestdir}"
     mkdir -p "${ooddothdir}"
     echo -n -e \\x7f\\x45\\x4c\\x46\\xff > "${bindir}/bfile"
-	ln -s "${bindir}/bfile" "${bindir}/lbfile"
+    ln -s "${bindir}/bfile" "${bindir}/lbfile"
     echo -n -e \\x7f\\x45\\x4c\\x46\\xff > "${bindir}/sbfile"
     echo -n -e \\x7f\\x45\\x4c\\x46\\xff > "${bindir}/setuid-file"
     chmod u+s "${bindir}/setuid-file"
