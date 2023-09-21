@@ -40,7 +40,7 @@ def find_files(path, patterns):
     """Find potential files to modify dependencies on."""
     dep_files = []
     file_whitelist = set(['requires.txt', 'requirements.txt', 'setup.cfg',
-                          'setup.py', 'METADATA'])
+                          'setup.py', 'METADATA', 'PKG-INFO'])
     for root, _, files in os.walk(path):
         for name in files:
             filepath = os.path.join(root, name)
