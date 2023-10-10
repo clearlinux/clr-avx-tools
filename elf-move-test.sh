@@ -56,6 +56,7 @@ function test_run() {
     echo -n -e \\x7f\\x45\\x4c\\x46\\xff > "${bindir}/skip-file"
     echo -n -e \\x00 > "${bindir}/keep-file"
     echo -n -e \\x7f\\x45\\x4c\\x46\\xff\\xff > "${libdir}/lfile"
+    ln -s "${libdir}/lfile" "${libdir}/llfile"
     echo -n -e \\x7f\\x45\\x4c\\x46\\xff\\xff\\xff > "${othdir}/ofile"
     echo -n -e \\x7f\\x45\\x4c\\x46\\xff\\xff\\xff\\xff > "${execdir}/efile"
     echo -n -e \\x7f\\x45\\x4c\\x46\\xff\\xff\\xff\\xff\\xff > "${testdir}/tfile"
@@ -70,6 +71,7 @@ function test_run() {
     [ ! -f "${obindir}/skip-file" ]
     [ -f "${obindir}/keep-file" ]
     [ -f "${olibdir}/lfile" ]
+    [ ! -f "${olibdir}/llfile" ]
     [ -f "${oothdir}/ofile" ]
     [ -f "${oexecdir}/efile" ]
     [ -f "${otestdir}/tfile" ]
