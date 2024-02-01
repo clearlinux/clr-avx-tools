@@ -11,7 +11,7 @@ def setup_parser():
     """Create commandline argument parser."""
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("btype", help="Binary type [avx2, avx512]")
+    parser.add_argument("btype", help="Binary type [avx2, avx512, apx]")
 
     parser.add_argument("installdir", help="Content directory to scan")
 
@@ -88,6 +88,8 @@ def move_content(args, filemap):
         optimized_prefix = 'V3'
     elif args.btype == 'avx512':
         optimized_prefix = 'V4'
+    elif args.btype == 'apx':
+        optimized_prefix = 'VA'
     else:
         return
     optimized_dir = os.path.join(args.targetdir, optimized_prefix)
@@ -125,8 +127,8 @@ def main():
     """Entry point function."""
     parser = setup_parser()
     args = parser.parse_args()
-    if args.btype not in ("avx2", "avx512"):
-        print(f"Error: btype '{args.btype}' not supported (needs to be either avx2 or avx512)")
+    if args.btype not in ("avx2", "avx512", "apx"):
+        print(f"Error: btype '{args.btype}' not supported (needs to be either avx2, avx512 or apx)")
         sys.exit(-1)
     if args.outfile:
         print('Warning: outfile argument is longer used, ignoring.')

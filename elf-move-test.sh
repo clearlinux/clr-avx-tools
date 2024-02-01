@@ -4,25 +4,39 @@ set -eEu -o pipefail
 
 BUILDDIR2=$(mktemp -d)
 BUILDDIR512=$(mktemp -d)
+BUILDDIRA=$(mktemp -d)
 OUTDIR2=$(mktemp -d)
 OUTDIR512=$(mktemp -d)
-FMFILE2=$(mktemp)
-FMFILE512=$(mktemp)
+OUTDIRA=$(mktemp -d)
 
 function cleanup() {
-    rm -fr "${BUILDDIR2}" "${BUILDDIR512}" "${OUTDIR2}" "${OUTDIR512}" "${FMFILE2}" "${FMFILE512}"
+    rm -fr "${BUILDDIR2}"
+    rm -fr "${BUILDDIR512}"
+    rm -fr "${BUILDDIRA}"
+    rm -fr "${OUTDIR2}"
+    rm -fr "${OUTDIR512}"
+    rm -fr "${OUTDIRA}"
 }
 trap 'cleanup' EXIT
 
 function test_run() {
     local avx=$1
-    eval local outdir='$OUTDIR'$avx
-    if [ $avx -eq 2 ]; then
+    if [ $avx = 2 ]; then
+        eval local outdir='$OUTDIR2'
         local outdirv="${outdir}/V3"
-    else
+        local elfarg="avx2"
+        eval local builddir='$BUILDDIR2'
+    elif [ $avx = 512 ]; then
+        eval local outdir='$OUTDIR512'
         local outdirv="${outdir}/V4"
+        local elfarg="avx512"
+        eval local builddir='$BUILDDIR512'
+    else
+        eval local outdir='$OUTDIRA'
+        local outdirv="${outdir}/VA"
+        local elfarg="apx"
+        eval local builddir='$BUILDDIRA'
     fi
-    eval local builddir='$BUILDDIR'$avx
     local bindir="${builddir}/usr/bin"
     local sbindir="${builddir}/usr/sbin"
     local libdir="${builddir}/usr/lib64"
@@ -62,7 +76,7 @@ function test_run() {
     echo -n -e \\x7f\\x45\\x4c\\x46\\xff\\xff\\xff\\xff\\xff > "${testdir}/tfile"
     echo -n -e \\x7f\\x45\\x4c\\x46\\xff\\xff\\xff\\xff\\xff\\xff > "${oddothdir}/oofile"
 
-    python3 elf-move.py "avx${avx}" "${builddir}" "${outdir}" --skip-path /usr/bin/skip-file --path /usr/bin/keep-file &> /dev/null
+    python3 elf-move.py "${elfarg}" "${builddir}" "${outdir}" --skip-path /usr/bin/skip-file --path /usr/bin/keep-file &> /dev/null
 
     [ -f "${obindir}/bfile" ]
     [ ! -f "${obindir}/lbfile" ]
@@ -80,3 +94,4 @@ function test_run() {
 
 test_run 2
 test_run 512
+test_run a
